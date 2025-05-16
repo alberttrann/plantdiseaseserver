@@ -210,7 +210,8 @@ Controlled via `update_toggle_state` WebSocket messages from the client. Their s
 *   **`GLOBAL_GROUNDING_ACTIVE` (boolean):** Placeholder for future knowledge base grounding feature.
 
 ## 10. Folder Structure (Backend - Simplified)
-your-project-root/
+```
+alberttran/plantdiseaseserver
 ├── main-gemma3.py # Main backend script
 ├── server_settings.json # Stores Gemini API key (created by script)
 ├── chat_history.db # SQLite database (created by script)
@@ -219,7 +220,7 @@ your-project-root/
 │ └── <image_filename.jpg>
 ├── F:/CHROMA/ # ChromaDB persistence path (as configured)
 └── .venv/ # Python virtual environment
-
+```
 ## 11. Troubleshooting
 
 *   **`AttributeError` on startup or during calls:**
