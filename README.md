@@ -128,8 +128,8 @@ The backend provides a WebSocket endpoint for real-time communication with the f
 
 1.  **Clone the Repository (if applicable):**
     ```bash
-    git clone <your-repo-url>
-    cd <your-repo-directory>/backend # Or wherever main-gemma3.py is
+    git clone https://github.com/alberttrann/plantdiseaseserver.git
+    cd plantdiseaseserver
     ```
 
 2.  **Create a Virtual Environment (Recommended):**
@@ -147,7 +147,7 @@ The backend provides a WebSocket endpoint for real-time communication with the f
     ```bash
     pip install websockets torch torchvision torchaudio transformers sentence-transformers Pillow numpy accelerate bitsandbytes google-genai chromadb uvicorn # If using uvicorn for serving
     # For Kokoro TTS, installation might be more specific if not on PyPI directly
-    # pip install kokoro-tts # (Hypothetical, check Kokoro's actual installation)
+    pip install kokoro
     ```
     *(Ensure you install versions compatible with your CUDA setup if using GPU.)*
 
