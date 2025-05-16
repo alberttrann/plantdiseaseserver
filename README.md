@@ -21,6 +21,7 @@ This backend server powers a sophisticated, AI-driven chatbot designed to assist
 10. [Folder Structure (Backend)](#folder-structure-backend)
 11. [Troubleshooting](#troubleshooting)
 12. [Future Enhancements](#future-enhancements)
+13. [Front-end client](#Front-end-client)
 
 ## 1. Overview
 
@@ -248,3 +249,6 @@ your-project-root/
 *   Streamed responses from LLMs back to the client for better perceived responsiveness.
 *   More sophisticated error handling and user feedback on the frontend.
 *   Configuration options for model selection, paths, etc., via a config file instead of hardcoding.
+
+## 13. Front-end-client 
+Here is the link to the front-end client: [https://github.com/alberttrann/react-vite-ts]
