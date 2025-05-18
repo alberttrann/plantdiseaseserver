@@ -354,7 +354,7 @@ alberttran/plantdiseaseserver
 
 ## 13. Future Enhancements
 
-*   Implement the "Grounding" feature using the provided JSON knowledge base.
+*   Implement the "Grounding" feature using a custom Huggingface dataset, with data distilled from a Gemini model. More details here: https://github.com/alberttrann/plant-disease-dataset
 *   More robust UI synchronization for toggle states.
 *   User-specific API key storage if deploying for multiple users.
 *   Frontend UI for "Secrets" panel to manage API keys.
