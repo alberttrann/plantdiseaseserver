@@ -2,7 +2,7 @@
 
 This backend server powers a sophisticated, AI-driven chatbot designed to assist users in diagnosing plant health issues. It supports multimodal interactions (text, voice, image), leverages multiple Large Language Models (local Gemma and cloud-based Gemini), and incorporates features like session management, RAG, conversation summarization, and real-time speech processing. Given that the setup can fit on a 6gb vram setup, this chatbot can be easily hosted by a farmer on a laptop under 8gb of VRAM, which can be accessed by the farmer's phone for mobile use through exposing the local backend server and front-end client with tunnelling tools like pinggy or ngrok
 
-Next plan in the near future is adding in the ability for users to create their own "Knowledge Base" as grounding truth for the model. The model itself also will be grounded on a custom dataset with 38 classes of plant diseases on over 70k samples: https://huggingface.co/datasets/minhhungg/plant-disease-dataset. More details of the making of the dataset is here:  
+Next plan in the near future is adding in the ability for users to create their own "Knowledge Base" as grounding truth for the model. The model itself also will be grounded on a custom dataset with 38 classes of plant diseases on over 70k samples: https://huggingface.co/datasets/minhhungg/plant-disease-dataset. More details of the making of the dataset is here: https://github.com/alberttrann/plant-disease-dataset
 
 Here is the link to the front-end client: (https://github.com/alberttrann/react-vite-ts)
 
