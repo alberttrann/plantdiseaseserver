@@ -1,6 +1,6 @@
 # AI-Powered Multimodal Plant Health Assistant - Backend
 
-This backend server powers a sophisticated, AI-driven chatbot designed to assist users in diagnosing plant health issues. It supports multimodal interactions (text, voice, image), leverages multiple Large Language Models (local Gemma and cloud-based Gemini), and incorporates features like session management, RAG, conversation summarization, and real-time speech processing.
+This backend server powers a sophisticated, AI-driven chatbot designed to assist users in diagnosing plant health issues. It supports multimodal interactions (text, voice, image), leverages multiple Large Language Models (local Gemma and cloud-based Gemini), and incorporates features like session management, RAG, conversation summarization, and real-time speech processing. Given that the setup can fit on a 6gb vram setup, this chatbot can be easily hosted by a farmer on a laptop under 8gb of VRAM, which can be accessed by the farmer's phone for mobile use through exposing the local backend server and front-end client with tunnelling tools like pinggy or ngrok
 
 ## Table of Contents
 
@@ -15,13 +15,14 @@ This backend server powers a sophisticated, AI-driven chatbot designed to assist
     *   [Backend Setup](#backend-setup)
     *   [Environment Variables & Configuration](#environment-variables--configuration)
 6.  [Running the Server](#running-the-server)
-7.  [Key Backend Modules/Classes](#key-backend-modulesclasses)
-8.  [API Key Management](#api-key-management)
-9.  [Developer Toggles](#developer-toggles)
-10. [Folder Structure (Backend)](#folder-structure-backend)
-11. [Troubleshooting](#troubleshooting)
-12. [Future Enhancements](#future-enhancements)
-13. [Front-end client](#Front-end-client)
+7.  [Deployment & Public Exposure](#Deployment-&-Public-Exposure)
+8.  [Key Backend Modules/Classes](#key-backend-modulesclasses)
+9.  [API Key Management](#api-key-management)
+10.  [Developer Toggles](#developer-toggles)
+11. [Folder Structure (Backend)](#folder-structure-backend)
+12. [Troubleshooting](#troubleshooting)
+13. [Future Enhancements](#future-enhancements)
+14. [Front-end client](#Front-end-client)
 
 ## 1. Overview
 
@@ -180,7 +181,117 @@ The backend provides a WebSocket endpoint for real-time communication with the f
 4.  The server will start, pre-load models, and listen on `0.0.0.0:9073` by default.
 5.  Connect your frontend client to `ws://127.0.0.1:9073`.
 
-## 7. Key Backend Modules/Classes
+## 7. Deployment & Public Exposure 
+
+This section provides guidance on how to expose your locally running backend server to the public internet for testing with a publicly accessible frontend, primarily using tunneling services like ngrok or Pinggy. This is suitable for development, prototyping, and small-sized personal use. 
+
+**Note:** For actual large-scale production deployment, consider containerization (Docker), cloud platforms (AWS, GCP, Azure), and proper reverse proxies (Nginx, Caddy) with SSL certificate management.
+
+### Using Tunneling Services (ngrok, Pinggy, etc.)
+
+Tunneling services create a secure tunnel from a public URL to your local machine.
+
+1.  **Choose a Tunneling Service:**
+    *   **ngrok:** Popular and well-documented. Offers HTTP/S and TCP tunnels. Free tier provides dynamic URLs.
+        *   Website: [ngrok.com](https://ngrok.com/)
+    *   **Pinggy:** Another option, also with free tiers.
+        *   Website: [pinggy.io](https://pinggy.io/)
+    *   Others: `localtunnel`, `serveo` (availability may vary).
+
+2.  **Install the Tunneling Client:** Follow the instructions on the chosen service's website to download and set up their client.
+
+3.  **Expose Your Backend WebSocket Server:**
+    *   Your backend Python server runs (by default) on `localhost:9073`.
+    *   **Using ngrok (Recommended for WebSockets on HTTP/S or TCP):**
+        *   **Option A (HTTP/S Tunnel - Handles WebSocket Upgrades):**
+            This is often preferred if you want a `wss://` (secure WebSocket) URL.
+            ```bash
+            ngrok http 9073
+            ```
+            ngrok will output forwarding URLs, e.g.:
+            `Forwarding                    https://<random-id>.ngrok-free.app -> http://localhost:9073`
+            Your public WebSocket URL will be: `wss://<random-id>.ngrok-free.app`
+        *   **Option B (TCP Tunnel - More Generic):**
+            This forwards raw TCP traffic. Good if HTTP/S upgrade handling by ngrok causes issues, or if your WS server is not on a standard HTTP port.
+            ```bash
+            ngrok tcp 9073
+            ```
+            ngrok will output a TCP address, e.g.:
+            `Forwarding                    tcp://0.tcp.ngrok.io:<random-port> -> localhost:9073`
+            Your public WebSocket URL will be: `ws://0.tcp.ngrok.io:<random-port>` (Note: `ws://` not `wss://` unless you configure TLS termination separately).
+
+    *   **Using Pinggy (Refer to their specific commands):**
+        You mentioned using `pinggy.link`. The command would be specific to how Pinggy handles TCP or WebSocket traffic.
+        Example (hypothetical, **check Pinggy docs**):
+        ```bash
+        # For a raw TCP tunnel which WebSockets can use:
+        pinggy tcp -p 9073 wss://your-desired-subdomain.a.free.pinggy.link 
+        # Or it might give you a generic tcp.pinggy.io:PORT address
+        ```
+        Ensure the Pinggy tunnel type supports raw TCP or explicit WebSocket proxying.
+
+4.  **Update Frontend Configuration:**
+    *   In your frontend application (`src/App.tsx` or via environment variables like `.env`), set the `WEBSOCKET_URL` to the public URL provided by your tunneling service for the backend.
+    *   Example for ngrok HTTP tunnel: `const WEBSOCKET_URL = "wss://<random-id>.ngrok-free.app";`
+    *   Example for ngrok TCP tunnel: `const WEBSOCKET_URL = "ws://0.tcp.ngrok.io:<random-port>";`
+    *   Example for your Pinggy URL: `const WEBSOCKET_URL = "wss://rnapn-42-117-46-84.a.free.pinggy.link";` (if this is indeed your backend tunnel).
+
+5.  **Configure Backend `allowed_origins`:**
+    *   Your Python WebSocket server (`main-gemma3.py`) uses the `origins` parameter in `websockets.serve()` to restrict which frontend origins can connect.
+    *   If your frontend is also tunneled (e.g., Vite dev server accessed via `https://my-frontend.ngrok-free.app`), you **must** add this frontend's public origin to the `allowed_origins` list in `main-gemma3.py`.
+        ```python
+        # In main-gemma3.py, inside the main() function
+        allowed_origins = [
+            "http://localhost:5173",      # Local Vite dev server
+            "http://127.0.0.1:5173",    # Also for local Vite
+            "https://your-frontend-public-url.ngrok-free.app", # Replace with your frontend's ngrok/pinggy URL
+            "https://another-frontend-public-url.pinggy.link"  # If using pinggy for frontend
+        ]
+        # ...
+        server = await websockets.serve(
+            handle_client, 
+            addr, 
+            port, 
+            # ... other params ...
+            origins=allowed_origins
+        )
+        ```
+    *   **Important:** The origin is the scheme, hostname, and port (if not default). For `https://my-frontend.ngrok-free.app/some/path`, the origin is `https://my-frontend.ngrok-free.app`.
+
+6.  **Configure Frontend Dev Server `allowedHosts` (Vite):**
+    *   If you are also tunneling your Vite frontend dev server and accessing it via its public ngrok/pinggy URL, you must add that public hostname to your `vite.config.js` (or `.ts`) `server.allowedHosts` array. This allows Vite to serve requests to that hostname.
+        ```javascript
+        // vite.config.js
+        export default defineConfig({
+          // ...
+          server: {
+            host: true, // Listen on all interfaces
+            allowedHosts: [
+              'your-frontend-public-hostname.ngrok-free.app',
+              'your-frontend-public-hostname.pinggy.link',
+            ],
+          },
+        });
+        ```
+
+7.  **Restart Servers:**
+    *   After making changes to backend `allowed_origins` or frontend `WEBSOCKET_URL` or `vite.config.js`, restart the respective servers.
+
+### Common Issues & Tips when Tunneling:
+
+*   **HTTP vs. TCP Tunnels:** For WebSockets, TCP tunnels are often more reliable as they forward raw traffic. HTTP/S tunnels need to correctly handle the WebSocket `Upgrade` handshake. Most modern versions of ngrok handle this well for HTTP/S tunnels. Verify your chosen service's WebSocket support.
+*   **`ws://` vs. `wss://`:**
+    *   If your tunnel provides an `https://` endpoint, use `wss://` for your WebSocket URL.
+    *   If your tunnel provides a raw `tcp://` endpoint, use `ws://`.
+    *   Mixing these (e.g., `ws://` to an `https` ngrok endpoint) will likely fail.
+*   **Dynamic Tunnel URLs:** Free tiers of services like ngrok provide dynamic URLs that change each time you restart the ngrok client. You'll need to update your frontend's `WEBSOCKET_URL` (and potentially backend's `allowed_origins` if your frontend URL also changes) accordingly. Using environment variables for `WEBSOCKET_URL` in the frontend can make this easier to manage.
+*   **CORS vs. WebSocket Origins:**
+    *   `allowedHosts` in Vite is a dev server security feature.
+    *   `origins` in the Python `websockets` library is a WebSocket security feature similar to CORS, controlling which frontend origins can establish a WebSocket connection.
+*   **Firewalls:** Ensure your local machine's firewall allows the tunneling client to make outbound connections and your Python server to accept connections on the specified port (e.g., `9073`) from the tunneling client (usually from `localhost` or `127.0.0.1` as the tunnel client runs locally).
+*   **Tunnel Inspector:** Use the web inspector provided by your tunneling service (e.g., `http://localhost:4040` for ngrok) to see incoming requests to your tunneled backend port. This is invaluable for debugging if connections are even reaching the tunnel.
+
+## 8. Key Backend Modules/Classes
 
 *   **`main-gemma3.py`:** The main script containing all logic.
 *   **`GeminiAPIProcessor`:** Handles all interactions with the Google Gemini API.
@@ -193,7 +304,7 @@ The backend provides a WebSocket endpoint for real-time communication with the f
 *   **`handle_client`:** Manages individual WebSocket client connections and their lifecycles.
 *   **`process_user_input_and_respond`:** Core logic for processing user queries and generating AI responses.
 
-## 8. API Key Management
+## 9. API Key Management
 
 *   The Gemini API key is required for "Use Gemini" and "Eval Mode" toggles.
 *   The client UI should prompt the user for the key if needed.
@@ -201,7 +312,7 @@ The backend provides a WebSocket endpoint for real-time communication with the f
 *   The backend stores this key in `server_settings.json` for persistence across server restarts.
 *   The `GEMINI_API_KEY_STORE` global variable holds the key in memory during runtime.
 
-## 9. Developer Toggles
+## 10. Developer Toggles
 
 Controlled via `update_toggle_state` WebSocket messages from the client. Their states are stored in global backend variables:
 
@@ -209,7 +320,7 @@ Controlled via `update_toggle_state` WebSocket messages from the client. Their s
 *   **`GLOBAL_EVAL_MODE_ACTIVE` (boolean):** If `True` and API key is set, an additional "evaluation" response is generated by Gemini after the main AI response.
 *   **`GLOBAL_GROUNDING_ACTIVE` (boolean):** Placeholder for future knowledge base grounding feature.
 
-## 10. Folder Structure (Backend - Simplified)
+## 11. Folder Structure (Backend - Simplified)
 ```
 alberttran/plantdiseaseserver
 ├── main-gemma3.py # Main backend script
@@ -221,7 +332,7 @@ alberttran/plantdiseaseserver
 ├── F:/CHROMA/ # ChromaDB persistence path (as configured)
 └── .venv/ # Python virtual environment
 ```
-## 11. Troubleshooting
+## 12. Troubleshooting
 
 *   **`AttributeError` on startup or during calls:**
     *   Ensure all Python dependencies are installed correctly.
@@ -240,7 +351,7 @@ alberttran/plantdiseaseserver
     *   Ensure the backend server is running and accessible on the configured host/port.
     *   Check for firewall issues.
 
-## 12. Future Enhancements
+## 13. Future Enhancements
 
 *   Implement the "Grounding" feature using the provided JSON knowledge base.
 *   More robust UI synchronization for toggle states.
@@ -251,5 +362,6 @@ alberttran/plantdiseaseserver
 *   More sophisticated error handling and user feedback on the frontend.
 *   Configuration options for model selection, paths, etc., via a config file instead of hardcoding.
 
-## 13. Front-end-client 
+## 14. Front-end-client 
 Here is the link to the front-end client: [https://github.com/alberttrann/react-vite-ts]
+
