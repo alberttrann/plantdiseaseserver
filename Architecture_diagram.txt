@@ -1,0 +1,57 @@
++-------------------------------------------------------------------------------------------------+
+|                                         USER INTERFACE (Frontend)                               |
+|                                                                                                 |
+| [Input: Text, Image, Voice] ----> [ MainChatView, Sidebar, Toggles, APIKeyModal ]               |
+|        ^                                       |                                                |
+|        | User Actions                          | WebSocket Messages (JSON)                      |
+|        |                                       V                                                |
+| [Display: Chat, Audio] <---------------- [ WebSocketProvider (Manages WS & Client State) ]      |
++-------------------------------------------------------------------------------------------------+
+                                                    ^
+                                                    | WebSocket Connection (ws://...)
+                                                    V
++-------------------------------------------------------------------------------------------------+
+|                                       BACKEND SERVER (Python)                                   |
+|                                                                                                 |
+|      [ WebSocket Server (handle_client) ] <-----------------------------------------------------+
+|                   |
+|                   V
+|      [ Request Router / Dispatcher (receive_data_from_client) ]
+|        |   |   |                                     |
+|        |   |   | Process User Input                  | Settings/API Key Msgs
+|        |   |   V                                     V
+|        |   | +--------------------------+     +---------------------------------+
+|        |   | | process_user_input_and_respond |     | Global Toggle/API Key States  |
+|        |   | +--------------------------+     | (In-memory + settings.json)   |
+|        |   |       |         ^                +---------------------------------+
+|        |   |       |         | Main AI Resp.
+|   (VAD)|   |       | (Image) | + Eval Resp.
+|    +---|---|-------|---------|-+
+|    V   V   |   +---V---+   |
+| [AudioSegmentDetector] | [GemmaMultimodalProcessor] | [GeminiAPIProcessor]
+|          |   +---------+   +-------------+
+|          |       | (Local Gemma-3)      | (Gemini API)
+|          V       V                      V
+|      [Whisper ASR] +-----> [Local Gemma Model]      [Google Gemini API]
+| (Speech-to-Text)   |                 ^                      ^
+|          |         |                 |______________________|
+|          | Text    | RAG Context, User Query, Image/Desc.
+|          |         V
+|          +---> [ RAG System ] -------+----> [ChromaDB (Vectors)]
+|                  | ^                 |
+|                  | | Embeddings      +----> [SentenceTransformer]
+|                  | |
+|                  +---- [ Conversation Summarizer (Qwen) ]
+|                            |        |
+|                            | Store  | Store Summary
+|                            V        V
+|      [ SQLite DB (Messages, Sessions, Summaries) ] & [ Media Files (Images) ]
+|                            ^
+|                            | AI Resp. Text for TTS
+|                            |
+|      [ Kokoro TTS ] <-------+
+|          |
+|          | Audio out to client
+|          +--------------------------------------------------------------------------------------> To WebSocket Server
+|
++-------------------------------------------------------------------------------------------------+

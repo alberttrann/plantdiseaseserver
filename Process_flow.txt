@@ -1,0 +1,80 @@
++---------------------------+      +---------------------------+      +-----------------------------+
+|       USER INTERFACE      |----->|    BACKEND WEBSOCKET      |<---->|     STATE & SESSION MGR     |
+| (Frontend: React/Vite)    |      |        HANDLER            |      | (Toggles, API Key, Sess ID) |
++---------------------------+      +---------------------------+      +-----------------------------+
+           ^      |                                |   |
+           |      | User Input (Text, Image, Voice)  |   | Get/Set Toggle State
+           |      V                                V   | Get API Key
+           |   +---------------------------+      +---------------------------+
+           |   |  INPUT PROCESSING & REQ   |      |      AUTHENTICATION &     |
+           |   |  (process_user_input...)  |<-----|     CONFIGURATION         |
+           |   +---------------------------+      +---------------------------+
+           |              |                                       |
+           |              | If Image:                             | If Gemini Active & No Key:
+           |              |   +------------------------+          |  +------------------------+
+           |              |   | IMAGE DESC. (Gemma)    |          |  | Notify Client: Key Req |
+           |              |   | (if Gemma is primary)  |          |  +------------------------+
+           |              |   +------------------------+          |          ^
+           |              |              |                          |----------|
+           |              |              | Image Desc. Text         |
+           |              V              V                          |
+           |   +-----------------------------------------+          |
+           |   |         LLM SELECTION & PROMPT          |----------| (Select LLM based on Toggle)
+           |   |             CONSTRUCTION                |
+           |   |  (System Prompt, RAG, User Q, Img/Desc) |
+           |   +-----------------------------------------+
+           |              |                |
+           | (Use Gemma)  |                | (Use Gemini)
+           |      +-------+                +-------+
+           |      V                                V
+           |   +------------------------+      +------------------------+
+           |   | GemmaMultimodalProcessor |      |   GeminiAPIProcessor   |
+           |   |  - generate_streaming  |      | - generate_response_..|
+           |   +------------------------+      +------------------------+
+           |              |                                |
+           |  (Local LLM) |                                | (Cloud LLM API)
+           |      +-------+                +-------+
+           |      V                                V
+           |   +------------------------------------------+
+           |   |           MAIN AI RESPONSE               |
+           |   | (Analysis, Clarification Qs, Diagnosis)  |
+           |   +------------------------------------------+
+           |              |
+           |              | If Eval Toggle ON:
+           |              |   +--------------------------+
+           |              |   |   CALL GEMINI FOR EVAL   |
+           |              |   | (Summary, Last Q, Image) |
+           |              |   +--------------------------+
+           |              |              | Eval Response
+           |              V              V
+           |   +------------------------------------------+
+           |   |   FORMAT & SEND RESPONSE(S) TO CLIENT  |
+           |   |   (Main Response, Optional Eval Resp.)   |
+           |   +------------------------------------------+
+           |              |
+           |              | (Store messages, image info)
+           |              V
+           |   +------------------------------------------+
+           |   |           DATA PERSISTENCE             |
+           |   | (SQLite: Messages, Sessions, Summaries)  |
+           |   | (ChromaDB: Embeddings for RAG)         |
+           |   +------------------------------------------+
+           |              |
+           |              | (Trigger TTS if requested)
+           |              V
+           |   +------------------------+
+           |   |  TTS (Kokoro)          |
+           |   +------------------------+
+           |              | TTS Audio
+           |--------------| (Back to User Interface)
+                          |
+                          | (Trigger Summarization if threshold met)
+                          V
+                    +------------------------+
+                    | SUMMARIZER (Qwen)      |
+                    +------------------------+
+                          | Updated Summary
+                          V (Store in DB, Chroma)
+
+[ RAG System (ChromaDB + Embedding Model) feeds into "LLM SELECTION & PROMPT CONSTRUCTION" ]
+[ Summaries (Qwen) feed into RAG System and "CALL GEMINI FOR EVAL" ]
