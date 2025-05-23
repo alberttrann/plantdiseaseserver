@@ -364,5 +364,9 @@ alberttran/plantdiseaseserver
 *   Streamed responses from LLMs back to the client for better perceived responsiveness.
 *   More sophisticated error handling and user feedback on the frontend.
 *   Configuration options for model selection, paths, etc., via a config file instead of hardcoding.
+  
+![Uploading Screenshot 2025-05-17 000110.png…]()
+
+![Uploading Screenshot 2025-05-17 011027.png…]()
 
 
