@@ -2085,10 +2085,30 @@ async def main():
             logger.exception("FATAL: Global Qwen2.5-0.5B-Instruct model initialization failed.")
             GLOBAL_QWEN_MODEL = None; GLOBAL_QWEN_TOKENIZER = None; GLOBAL_SUMMARIZER = None
         
-        logger.info("--- All shared models pre-loaded successfully (Summarizer might be None if SmolLM failed) ---")
+        logger.info("--- All shared models pre-loaded successfully (Summarizer might be None if Qwen failed) ---")
         addr, port = "0.0.0.0", 9073
+
+        # Define allowed origins
+        allowed_origins = [
+            "http://localhost:5173",       # For local Vite dev server
+            "http://127.0.0.1:5173",     # Also for local Vite
+            
+            
+            
+            
+            
+            # Add any other origins you need to support
+        ]
+        logger.info(f"Allowed WebSocket origins: {allowed_origins}")
         logger.info(f"Starting WebSocket server on {addr}:{port}")
-        server = await websockets.serve(handle_client, addr, port, ping_interval=20, ping_timeout=60)
+        server = await websockets.serve(
+            handle_client, 
+            addr, 
+            port, 
+            ping_interval=20, 
+            ping_timeout=60,
+            origins= None if not allowed_origins else allowed_origins,  # Set origins to None to allow all or use the list
+            )
         logger.info(f"WebSocket server RUNNING on {addr}:{port}")
         try: await asyncio.Future()
         except (KeyboardInterrupt, SystemExit, asyncio.CancelledError): logger.info("Server shutdown signal received...")
