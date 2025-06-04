@@ -2090,25 +2090,32 @@ async def main():
 
         # Define allowed origins
         allowed_origins = [
-            "http://localhost:5173",       # For local Vite dev server
-            "http://127.0.0.1:5173",     # Also for local Vite
-            
-            
-            
-            
-            
-            # Add any other origins you need to support
-        ]
+    "http://localhost:5173",       
+    "http://127.0.0.1:5173",     
+    "https://zw70f854-5173.asse.devtunnels.ms",
+    "http://zw70f854-5173.asse.devtunnels.ms",  # Add non-HTTPS variant
+    "https://zw70f854-9073.asse.devtunnels.ms",
+    "http://zw70f854-9073.asse.devtunnels.ms"   # Add non-HTTPS variant
+]
         logger.info(f"Allowed WebSocket origins: {allowed_origins}")
         logger.info(f"Starting WebSocket server on {addr}:{port}")
         server = await websockets.serve(
             handle_client, 
             addr, 
-            port, 
-            ping_interval=20, 
+            port,
+            ping_interval=20,
             ping_timeout=60,
-            origins= None if not allowed_origins else allowed_origins,  # Set origins to None to allow all or use the list
-            )
+            origins=allowed_origins,
+            max_size=2**20,
+            max_queue=2**5,
+            process_request=None,
+            compression=None,
+            subprotocols=None,
+            server_header=None,
+            ssl=None  # Add this to explicitly handle non-SSL connections
+        )
+            
+        
         logger.info(f"WebSocket server RUNNING on {addr}:{port}")
         try: await asyncio.Future()
         except (KeyboardInterrupt, SystemExit, asyncio.CancelledError): logger.info("Server shutdown signal received...")
